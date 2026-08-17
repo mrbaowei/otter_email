@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <style>
+    *{box-sizing:border-box}body{width:290px;margin:0;padding:16px;color:#183629;font:13px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}header{display:flex;align-items:center;gap:8px;margin-bottom:14px}header .logo{display:grid;place-items:center;width:30px;height:30px;overflow:hidden;border:1px solid #cfe0e4;border-radius:9px;background:#f5fbfc}header .logo img{display:block;width:100%;height:100%;object-fit:contain}h1{font-size:15px;margin:0}.row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid #e3eae6}.status{padding:9px 10px;border-radius:9px;background:#f2f7f4;color:#557064;margin-bottom:12px}button{width:100%;height:36px;border:1px solid #bcd4c6;border-radius:8px;background:#fff;color:#24523c;cursor:pointer}.switch{position:relative;width:40px;height:23px}.switch input{opacity:0}.switch span{position:absolute;inset:0;border-radius:99px;background:#b9c5bf}.switch span:after{content:"";position:absolute;left:3px;top:3px;width:17px;height:17px;border-radius:50%;background:white;transition:.2s}.switch input:checked+span{background:#087a49}.switch input:checked+span:after{transform:translateX(17px)}
+  </style>
+</head>
+<body>
+  <header><span class="logo"><img src="otter_orb.png" alt=""></span><h1>Email Otter</h1></header>
+  <div id="status" class="status">正在读取配置…</div>
+  <div class="row"><span>打开邮件自动摘要</span><label class="switch"><input id="enabled" type="checkbox"><span></span></label></div>
+  <p style="margin:10px 0;color:#63756c">支持 Gmail、Outlook、Yahoo、iCloud、163邮箱、126邮箱和 QQ邮箱</p>
+  <button id="settings" type="button">模型与摘要设置</button>
+  <script src="popup.js"></script>
+</body>
+</html>

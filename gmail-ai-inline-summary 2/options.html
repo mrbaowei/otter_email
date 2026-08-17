@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Email Otter 设置</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <header>
+      <div class="logo"><img src="otter_orb.png" alt=""></div>
+      <div>
+        <h1>Email Otter</h1>
+        <p>打开 Gmail、Outlook、Yahoo、iCloud、163邮箱、126邮箱或 QQ邮箱邮件后自动生成摘要。</p>
+      </div>
+    </header>
+
+    <form id="settings-form">
+      <section>
+        <div class="section-title">
+          <div>
+            <h2>自动摘要</h2>
+            <p>关闭后不会读取或分析支持的邮箱页面。</p>
+          </div>
+          <label class="switch"><input id="enabled" type="checkbox"><span></span></label>
+        </div>
+      </section>
+
+      <section>
+        <h2>模型服务</h2>
+        <div class="grid two">
+          <label>
+            <span>服务商</span>
+            <select id="provider">
+              <optgroup label="主要接口">
+                <option value="custom">自定义 OpenAI 兼容格式</option>
+                <option value="openai">OpenAI 官方 API</option>
+                <option value="gemini">Google AI Studio</option>
+              </optgroup>
+              <optgroup label="兼容预设">
+                <option value="deepseek">DeepSeek</option>
+                <option value="openrouter">OpenRouter</option>
+              </optgroup>
+            </select>
+            <small>每个服务商独立保存 Key、模型和 Endpoint，切换不会覆盖。</small>
+          </label>
+          <label>
+            <span>模型</span>
+            <input id="model" type="text" autocomplete="off" spellcheck="false">
+          </label>
+        </div>
+        <label>
+          <span>API Endpoint</span>
+          <input id="endpoint" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://… 或 http://localhost:…">
+          <small id="endpoint-help">自定义接口需填写完整的 Chat Completions 地址。</small>
+        </label>
+        <label>
+          <span>API Key</span>
+          <div class="secret-row">
+            <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…">
+            <button id="toggle-key" type="button" class="secondary">显示</button>
+          </div>
+          <small id="api-key-help">Key 保存在本机 Chrome 扩展存储中，不会发送给插件作者；它会随 API 请求发给你选择的模型服务。</small>
+        </label>
+        <div class="section-title thinking-setting">
+          <div>
+            <h2>AI 思考</h2>
+            <p id="thinking-help">默认关闭。开启后会请求当前模型使用中等思考强度。</p>
+          </div>
+          <label class="switch"><input id="thinkingEnabled" type="checkbox"><span></span></label>
+        </div>
+        <div class="model-test-row">
+          <span id="model-test-status" role="status" aria-live="polite"></span>
+          <button id="test-provider" type="button" class="secondary">测试连接</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>摘要格式</h2>
+        <div class="grid two">
+          <label>
+            <span>输出语言</span>
+            <input id="summaryLanguage" type="text" value="简体中文">
+          </label>
+          <label>
+            <span>详细程度</span>
+            <select id="detailLevel">
+              <option value="brief">极简</option>
+              <option value="standard">标准</option>
+              <option value="detailed">详细</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>单次最多读取字符数</span>
+          <input id="maxInputChars" type="number" min="5000" max="120000" step="1000">
+          <small>线程过长时优先保留最新邮件。默认 50,000 字符。</small>
+        </label>
+        <div class="section-title detail-default">
+          <div>
+            <h2>始终展开详细总结</h2>
+            <p>开启后，先显示极简结论，再自动生成并展开详细总结；关闭时仅在点击向下箭头后生成。</p>
+          </div>
+          <label class="switch"><input id="alwaysDetailed" type="checkbox"><span></span></label>
+        </div>
+      </section>
+
+      <section class="security">
+        <h2>安全说明</h2>
+        <p>邮件属于不可信输入。插件不会读取 Codex、ChatGPT、Antigravity 或其他桌面客户端的登录令牌；只使用你在这里明确填写的 API Key。浏览器扩展属于客户端环境，请使用独立、低额度、可随时撤销的 Key。涉及付款、账户、合同、交易和截止日期时，请核对原文。</p>
+      </section>
+
+      <section class="config-transfer">
+        <div class="section-title">
+          <div>
+            <h2>测试配置备份</h2>
+            <p>导出当前全部设置；重新加载或重新安装插件后，选择备份文件即可一键恢复。</p>
+          </div>
+          <div class="transfer-actions">
+            <button id="export-config" type="button" class="secondary">导出配置</button>
+            <button id="import-config" type="button" class="secondary">导入配置</button>
+            <input id="import-config-file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </div>
+        <p class="sensitive-note">配置文件包含你填写的 API Key，请仅保存在可信设备上，不要上传或发送给他人。</p>
+      </section>
+
+      <section class="usage-section">
+        <details id="token-usage-details" class="usage-details">
+          <summary>
+            <span class="usage-summary-copy">
+              <strong>Token 用量记录</strong>
+              <small id="token-usage-count">0 次摘要请求</small>
+            </span>
+            <span class="usage-summary-chevron" aria-hidden="true">⌄</span>
+          </summary>
+          <div class="usage-content">
+            <div class="usage-overview">
+              <div class="usage-metric">
+                <strong id="token-total">0</strong>
+                <span>累计 Token（全部记录）</span>
+              </div>
+              <button id="clear-token-usage" type="button" class="secondary">清空记录</button>
+            </div>
+            <p id="token-usage-note" class="usage-note">只记录实际发起的摘要请求，不保存邮件正文。接口返回精确 usage 时优先使用精确值，否则按文本长度估算。</p>
+            <div class="usage-table-wrap">
+              <table class="usage-table">
+                <thead>
+                  <tr>
+                    <th>时间</th>
+                    <th>邮箱 / 模型</th>
+                    <th>邮件 / 阶段</th>
+                    <th>输入</th>
+                    <th>输出</th>
+                    <th>合计</th>
+                  </tr>
+                </thead>
+                <tbody id="token-usage-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <footer>
+        <span id="status" role="status"></span>
+        <div>
+          <button id="clear-cache" type="button" class="secondary">清空摘要缓存</button>
+          <button type="submit" class="primary">保存设置</button>
+        </div>
+      </footer>
+    </form>
+  </main>
+  <script src="options.js"></script>
+</body>
+</html>
