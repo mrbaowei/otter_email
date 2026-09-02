@@ -1,0 +1,157 @@
+Email Otter Personal Use License 1.0
+
+Copyright (c) 2026 Baowei (GitHub: mrbaowei)
+All rights reserved except as expressly granted below.
+
+This is a proprietary, source-available license. It is not an open-source
+license.
+
+1. Definitions
+
+"Software" means the Email Otter software, source code, documentation, and
+other materials made available by the Licensor under this License, excluding
+Third-Party Components as described in Section 8.
+
+"You" means one natural person acting solely in that person's individual
+capacity. A company, organization, partnership, government body, educational
+institution, or other legal entity is not "You" and receives no license under
+these terms.
+
+"Personal, Noncommercial Use" means use solely for Your own private benefit,
+with no direct or indirect commercial purpose, commercial advantage,
+compensation, revenue, advertising benefit, business benefit, or anticipated
+commercial application.
+
+"Official Repository" means the GitHub repository for the Software at
+https://github.com/mrbaowei/otter_email, or a replacement URL expressly
+designated by the Licensor in that repository.
+
+2. Personal-Use Grant
+
+Subject to Your continued compliance with this License, the Licensor grants
+You a limited, nonexclusive, nontransferable, nonsublicensable, royalty-free
+copyright license to:
+
+(a) download the Software from the Official Repository;
+
+(b) make the private copies reasonably necessary to download, install, run,
+and privately modify the Software on devices privately owned or controlled by
+You;
+
+(c) install and run those copies solely on such devices; and
+
+(d) make private modifications to those copies solely on such devices, provided
+that neither the modifications nor the modified Software are disclosed,
+published, shared, transferred, or distributed to any other person or entity.
+
+Each permission above is granted only for Personal, Noncommercial Use. No
+other rights are granted by implication, estoppel, or otherwise.
+
+3. Prohibited Uses
+
+You may not use the Software or any modified version:
+
+(a) for, by, on behalf of, or for the benefit of any company, organization,
+employer, client, customer, or other person or legal entity;
+
+(b) in employment, contracting, consulting, customer service, professional
+services, internal business operations, product development, research with an
+anticipated commercial application, or any other business or organizational
+activity;
+
+(c) in exchange for any fee, compensation, subscription, donation tied to the
+use, or other consideration; or
+
+(d) in connection with advertising, sponsorship, promotion, monetized content,
+revenue generation, or any other commercial use or commercial advantage.
+
+4. No Distribution or Transfer
+
+Except for sharing the hyperlink permitted by Section 5, You may not, whether
+for free or for compensation, sell, rent, lease, license, sublicense, assign,
+transfer, disclose, publish, make public, mirror, re-upload, bundle, package,
+host, provide for download, or otherwise distribute or make available any
+original or modified copy of the Software, in whole or in part.
+
+You may not offer or provide the Software, or functionality based on the
+Software, as software as a service (SaaS), a hosted service, a managed service,
+or any other service for another person or entity.
+
+You may not remove, obscure, or alter any copyright, license, attribution, or
+proprietary notice included with the Software.
+
+5. Sharing the Official Link
+
+You may share a hyperlink to the Official Repository. This permission allows
+only sharing the link. It does not allow sharing source files, archives,
+packaged extensions, binaries, screenshots containing substantial source code,
+or any original or modified copy of the Software.
+
+6. GitHub Platform Functionality
+
+Notwithstanding Section 4, viewing or forking the Official Repository solely
+within GitHub, through GitHub functionality and only to the extent permitted by
+the GitHub Terms of Service, is not prohibited by this License. Those
+platform-specific rights are separate from this License, and nothing here
+expands them. A GitHub view or fork does not grant permission under this
+License for commercial use, off-platform distribution, or any other use not
+expressly permitted here.
+
+7. Ownership and Trademarks
+
+The Software is licensed, not sold. The Licensor retains all right, title, and
+interest in and to the Software and all rights not expressly granted by this
+License.
+
+No trademark, trade name, logo, product identity, branding, publicity, or
+endorsement right is granted. "Email Otter" and any associated names, logos,
+and branding may not be used without the Licensor's prior written permission,
+except as required for truthful identification of the unmodified Software.
+
+8. Third-Party Components
+
+The Software may contain third-party code, icons, assets, or other materials
+identified in THIRD_PARTY_NOTICES.md or in accompanying notices
+("Third-Party Components"). Third-Party Components remain subject to their own
+license terms. Nothing in this License limits rights granted directly under an
+applicable third-party license. If these terms conflict with a third-party
+license, that third-party license controls only for the corresponding
+Third-Party Component.
+
+9. Termination
+
+This License terminates automatically and immediately if You breach any of its
+terms. Upon termination, You must stop using the Software and delete all copies
+and modifications in Your possession or control, except to the extent that an
+applicable third-party license independently permits retention of a
+Third-Party Component. Termination does not limit any remedy available to the
+Licensor for the breach.
+
+10. Disclaimer of Warranty
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED
+"AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY KIND, EXPRESS, IMPLIED,
+OR STATUTORY, INCLUDING WITHOUT LIMITATION WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, ACCURACY, SECURITY,
+OR RELIABILITY. YOU ASSUME ALL RISK ARISING FROM USE OF THE SOFTWARE.
+
+11. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSOR WILL NOT BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR FOR ANY LOSS OF DATA, PRIVACY, PROFITS,
+REVENUE, BUSINESS, OR GOODWILL, ARISING OUT OF OR RELATING TO THE SOFTWARE OR
+THIS LICENSE, UNDER ANY LEGAL THEORY, EVEN IF ADVISED OF THE POSSIBILITY OF
+SUCH DAMAGES.
+
+12. General
+
+Any use not expressly permitted by this License requires the Licensor's prior
+written permission. Statutory rights and exceptions that cannot lawfully be
+waived or restricted remain unaffected. If any provision is held
+unenforceable, it will be limited to the minimum extent necessary, and the
+remaining provisions will remain in effect. A failure to enforce any provision
+is not a waiver.
+
+By downloading, copying, installing, running, or modifying the Software, You
+accept and agree to this License.

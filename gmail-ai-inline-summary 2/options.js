@@ -60,6 +60,7 @@ async function init() {
   for (const id of generalFields) {
     const element = document.getElementById(id);
     if (element.type === "checkbox") element.checked = Boolean(response.settings[id]);
+    else if (id === "summaryLanguage") element.value = normalizeSummaryLanguageSetting(response.settings[id]);
     else element.value = response.settings[id] ?? "";
   }
   providerConfigs = cloneProviderConfigs(response.settings.providerConfigs || {});
@@ -203,7 +204,7 @@ function validateImportedConfig(payload) {
   if (!active.endpoint || !active.model) throw new Error("当前服务商缺少 Endpoint 或模型名称");
   return {
     enabled: settings.enabled !== false,
-    summaryLanguage: String(settings.summaryLanguage || "简体中文").slice(0, 80),
+    summaryLanguage: normalizeSummaryLanguageSetting(settings.summaryLanguage),
     detailLevel: ["brief", "standard", "detailed"].includes(settings.detailLevel) ? settings.detailLevel : "brief",
     alwaysDetailed: Boolean(settings.alwaysDetailed),
     maxInputChars: Math.min(120000, Math.max(5000, Number(settings.maxInputChars) || 50000)),
@@ -217,6 +218,7 @@ function applySettingsToForm(settings) {
   for (const id of generalFields) {
     const element = document.getElementById(id);
     if (element.type === "checkbox") element.checked = Boolean(settings[id]);
+    else if (id === "summaryLanguage") element.value = normalizeSummaryLanguageSetting(settings[id]);
     else element.value = settings[id] ?? "";
   }
   providerConfigs = cloneProviderConfigs(settings.providerConfigs || {});
@@ -267,6 +269,14 @@ function cloneProviderConfigs(value) {
     provider,
     normalizeProviderConfig(provider, value?.[provider])
   ]));
+}
+
+function normalizeSummaryLanguageSetting(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized || normalized === "auto" || normalized === "browser" || normalized === "跟随浏览器") return "auto";
+  if (normalized === "en" || normalized.startsWith("en-") || normalized === "english" || normalized === "英文") return "en";
+  if (normalized === "zh-cn" || normalized.startsWith("zh") || normalized.includes("中文") || normalized.includes("chinese")) return "zh-CN";
+  return "auto";
 }
 
 document.getElementById("clear-cache").addEventListener("click", async () => {

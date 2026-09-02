@@ -1,0 +1,62 @@
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
+# Private project material and generated release archives
+/resources/
+/resources/private/
+/resources/archive/
+/resources/releases/
+/resources/media/
+/resources/brand/
+
+# Local environment files
+**/.env
+**/.env.*
+**/*.env
+**/*.env.*
+!**/.env.example
+!**/.env.sample
+!**/.env.template
+!**/*.env.example
+!**/*.env.sample
+!**/*.env.template
+
+# Email Otter and API configuration exports that may contain credentials
+**/email-otter-config-*.json
+**/*api-config-export*.json
+**/*api-key*.json
+**/*api_key*.json
+**/*apikey*.json
+**/*credentials*.json
+**/*secrets*.json
+
+# Certificates, signing material, and private keys
+**/*.key
+**/*.pem
+**/*.p8
+**/*.p12
+**/*.pfx
+**/*.jks
+**/*.keystore
+**/*.csr
+**/*.cer
+**/*.crt
+**/*.der
+
+# Distribution archives are generated locally
+**/*.zip
+
+# Editable extension icon source files; keep the exported production icons
+**/icon-master*.png
+!**/icon-16.png
+!**/icon-32.png
+!**/icon-48.png
+!**/icon-128.png
+
+# These public project files and assets must remain eligible for version control
+!**/manifest.json
+!**/README
+!**/README.md
+!**/screenshots/
+!**/screenshots/**

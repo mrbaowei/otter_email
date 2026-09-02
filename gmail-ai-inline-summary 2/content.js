@@ -5,7 +5,7 @@
   const TRANSLATE_DOCK_ID = "email-otter-translate-dock";
   const TRANSLATE_TRIGGER_ID = "email-otter-translate-trigger";
   const TASK_INDEX_KEY = "taskIndex:v1";
-  const BUILD_VERSION = "0.7.20";
+  const BUILD_VERSION = "0.7.28";
   const BRIEF_CACHE_PREFIX = "summaryCache:brief-v8:";
   const DETAIL_CACHE_PREFIX = "summaryCache:detail-v1:";
   const TRANSLATION_CACHE_PREFIX = "summaryCache:translation-v1:";
@@ -121,6 +121,7 @@
       modelProvider: settings.provider,
       model: settings.model,
       thinkingEnabled: settings.thinkingEnabled === true,
+      summaryLanguage: resolvedSummaryLanguageCode(settings.summaryLanguage),
       subject: thread.subject,
       messages: thread.messages.map((item) => [item.sender, item.date, item.body]),
       attachments: thread.attachments
@@ -148,7 +149,7 @@
     const card = ensureCard(thread);
     card._threadKey = threadKey;
     card.dataset.signature = signature;
-    renderLoading(card, thread, "正在快速提炼结论…");
+    renderLoading(card, thread);
 
     const sessionResult = briefResultsByThreadKey.get(threadKey);
     if (sessionResult) {
@@ -180,7 +181,7 @@
     const requestKey = card._threadKey || signature;
     if (briefRequestInFlightKey === requestKey) return;
     briefRequestInFlightKey = requestKey;
-    renderLoading(card, thread, force ? "正在重新提炼结论…" : "正在快速提炼结论…");
+    renderLoading(card, thread);
     let response;
     try {
       response = await sendMessage({ type: "SUMMARIZE_BRIEF", payload: thread });
@@ -266,11 +267,21 @@
       for (const anchor of root.querySelectorAll("a[href]")) {
         const href = sanitizeEmailLink(anchor.getAttribute("href") || anchor.href);
         if (!href || seen.has(href)) continue;
-        const text = (anchor.innerText || anchor.textContent || anchor.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 120);
+        const imageAlt = [...anchor.querySelectorAll("img[alt]")]
+          .map((image) => image.getAttribute("alt") || "")
+          .join(" ");
+        const text = (
+          anchor.innerText
+          || anchor.textContent
+          || anchor.getAttribute("aria-label")
+          || anchor.getAttribute("title")
+          || imageAlt
+          || ""
+        ).replace(/\s+/g, " ").trim().slice(0, 120);
         if (isLowValueEmailLink(href, text)) continue;
         seen.add(href);
         links.push({ href, text });
-        if (links.length >= 20) return links;
+        if (links.length >= 60) return links;
       }
     }
     return links;
@@ -287,8 +298,22 @@
   }
 
   function isLowValueEmailLink(href, text) {
-    const value = `${href} ${text}`;
-    return /(unsubscribe|退订|取消订阅|privacy|隐私政策|terms(?:\s+of\s+service)?|服务条款|facebook|instagram|linkedin|twitter|x\.com\/|youtube)/i.test(value);
+    const value = decodeLinkForClassification(`${href} ${text}`);
+    return /(?:unsubscribe|unsubscrib(?:e|ed|ing)|opt[\s_-]*out|退订|取消订阅|停止订阅|email[\s_-]*(?:preferences?|settings?)|manage[\s_-]*preferences?|subscription[\s_-]*(?:preferences?|settings?)|communication[\s_-]*preferences?|notification[\s_-]*preferences?|list[\s_-]*(?:manage|unsubscribe)|leave[\s_-]*(?:this[\s_-]*)?list|remove[\s_-]*me|privacy|隐私政策|terms(?:[\s_-]+of[\s_-]+service)?|服务条款|view[\s_-]*(?:(?:this|it)[\s_-]*)?(?:email[\s_-]*)?(?:(?:in|on)[\s_-]*)?(?:a[\s_-]*)?(?:browser|web|online)|web[\s_-]*version|网页版|在线查看|facebook|instagram|linkedin|twitter|x\.com\/|youtube)/i.test(value);
+  }
+
+  function decodeLinkForClassification(value) {
+    let decoded = String(value || "");
+    for (let round = 0; round < 2; round += 1) {
+      try {
+        const next = decodeURIComponent(decoded.replace(/\+/g, "%20"));
+        if (next === decoded) break;
+        decoded = next;
+      } catch {
+        break;
+      }
+    }
+    return decoded;
   }
 
   function extractBody(bodyEl) {
@@ -373,22 +398,25 @@
     fallbackRoot.parentElement?.insertBefore(card, fallbackRoot);
   }
 
-  function renderLoading(card, thread, label = "正在自动分析邮件…") {
+  function renderLoading(card, thread) {
     removeTranslationControls();
     card.className = "gais-card gais-loading";
     card.innerHTML = `
       ${headerHtml(`AI 摘要 · ${SITE.label}`, thread, "")}
       <div class="gais-loading-row">
         <div class="gais-loading-copy">
-          <strong>Otter 正在捕捉关键信息</strong>
-          <span>${escapeHtml(label)}</span>
+          <strong>Otter 正在从邮件中抓取小鱼</strong>
         </div>
-        <canvas class="gais-shaping-orb" width="48" height="48" role="img" aria-label="AI 正在塑形摘要"></canvas>
+        <div class="gais-fishing-scene" role="img" aria-label="水獭正在从邮件中抓取小鱼">
+          <img src="${escapeHtml(assetUrl("otter-loading.gif"))}" alt="">
+          <i class="gais-loading-fish gais-loading-fish-one" aria-hidden="true"></i>
+          <i class="gais-loading-fish gais-loading-fish-two" aria-hidden="true"></i>
+          <i class="gais-loading-fish gais-loading-fish-three" aria-hidden="true"></i>
+        </div>
       </div>
       <div class="gais-skeleton"><i></i><i></i><i></i></div>
     `;
     bindCommonActions(card);
-    initShapingOrb(card.querySelector(".gais-shaping-orb"));
   }
 
   function renderSetup(card) {
@@ -430,7 +458,8 @@
       : { ...summary, keyFacts: [] };
     const primaryAction = displaySummary.actions?.[0]?.text;
     const replyOptions = resolveReplyOptions(displaySummary, thread);
-    const actionLinks = selectActionLinks(thread.links, displaySummary.summary);
+    const summaryLanguage = resolvedSummaryLanguageCode(settings.summaryLanguage);
+    const actionLinks = selectActionLinks(thread.links, displaySummary.summary, summaryLanguage);
     card._briefSummary = displaySummary;
     card._detailSummary = null;
     card._replyOptions = null;
@@ -447,11 +476,10 @@
         </div>
       `)}
       <div class="gais-summary-row">
-        <p class="gais-summary">${escapeHtml(displaySummary.summary)}</p>
+        <p class="gais-summary">${summaryWithInlineActionLinks(displaySummary.summary, actionLinks, summaryLanguage)}</p>
       </div>
       <section class="gais-reply-panel" aria-live="polite" hidden></section>
       ${noReply ? '<div class="gais-no-reply" aria-label="无需回复">无需回复</div>' : ""}
-      ${actionLinks.length ? `<nav class="gais-link-actions" aria-label="邮件操作"><span class="gais-link-actions-label">邮件操作</span><div>${actionLinks.map((link) => `<a href="${escapeHtml(link.href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(link.title)}"><span>${escapeHtml(link.label)}</span><i aria-hidden="true">↗</i></a>`).join("")}</div></nav>` : ""}
       ${primaryAction ? `<div class="gais-action-preview"><span>待办</span><strong>${escapeHtml(primaryAction)}</strong><button type="button" class="gais-add-task" data-action="add-task" title="添加到 Otter 待办">+ 添加</button></div>` : ""}
       <div class="gais-footer">
         <span class="gais-copy-feedback" role="status" aria-live="polite"></span>
@@ -559,6 +587,56 @@
     });
   }
 
+  function summaryWithInlineActionLinks(summary, links, language) {
+    const source = String(summary || "").trim();
+    const sourceLower = source.toLocaleLowerCase();
+    const placements = [];
+    const matchedLinkIndexes = new Set();
+
+    links.forEach((link, linkIndex) => {
+      const label = String(link.label || "").replace(/\s+/g, " ").trim();
+      const withoutNavigationVerb = label.replace(/^(?:(?:前往|查看|打开|访问|转到|进入|试用|使用|支付|下载|阅读|了解)|(?:go to|open|view|visit|manage|try|use|pay|download|read|learn))\s*/iu, "").trim();
+      const candidates = [...new Set([withoutNavigationVerb, label])]
+        .filter((candidate) => candidate.length >= 3)
+        .sort((a, b) => b.length - a.length);
+
+      for (const candidate of candidates) {
+        const start = sourceLower.indexOf(candidate.toLocaleLowerCase());
+        if (start < 0) continue;
+        const end = start + candidate.length;
+        if (placements.some((item) => start < item.end && end > item.start)) continue;
+        placements.push({ start, end, link, linkIndex });
+        matchedLinkIndexes.add(linkIndex);
+        break;
+      }
+    });
+
+    placements.sort((a, b) => a.start - b.start);
+    let cursor = 0;
+    let html = "";
+    for (const placement of placements) {
+      html += escapeHtml(source.slice(cursor, placement.start));
+      html += inlineActionLinkHtml(source.slice(placement.start, placement.end), placement.link);
+      cursor = placement.end;
+    }
+    html += escapeHtml(source.slice(cursor));
+
+    const unmatchedLinks = links.filter((_, index) => !matchedLinkIndexes.has(index));
+    if (unmatchedLinks.length) {
+      const actions = unmatchedLinks
+        .map((link) => inlineActionLinkHtml(link.label, link))
+        .join(language === "zh-CN" ? "，或" : " or ");
+      html += language === "zh-CN"
+        ? `<span class="gais-summary-inline-tail"> 如有需要，可${actions}。</span>`
+        : `<span class="gais-summary-inline-tail"> If needed, you can ${actions}.</span>`;
+    }
+    return html;
+  }
+
+  function inlineActionLinkHtml(text, link) {
+    return `<a class="gais-inline-action" href="${escapeHtml(link.href)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(link.title)}">${escapeHtml(text)}</a>`;
+  }
+
   async function generateReplyDraft(card, option) {
     const panel = card.querySelector(".gais-reply-panel");
     if (!panel || !card._thread) return;
@@ -584,7 +662,101 @@
       renderReplyError(card, response?.error || "回复内容生成失败");
       return;
     }
+    if (await insertDraftIntoNativeReply(card, response.draft.draft)) {
+      renderNativeReplyOpened(card);
+      return;
+    }
     renderReplyDraft(card, response.draft.draft);
+  }
+
+  async function insertDraftIntoNativeReply(card, draft) {
+    if (SITE.key !== "gmail" || !draft?.trim()) return false;
+    const bodyEl = findBodyElements()[0];
+    const messageRoot = bodyEl ? findMessageRoot(bodyEl) : null;
+    if (!messageRoot) return false;
+
+    let editor = findGmailReplyEditor(messageRoot);
+    if (!editor) {
+      const replyButton = visibleElements(messageRoot.querySelectorAll('button, [role="button"], .ams'))
+        .find((element) => {
+          const label = [
+            element.innerText,
+            element.textContent,
+            element.getAttribute("aria-label"),
+            element.getAttribute("data-tooltip")
+          ].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+          return /^(回复|reply)(?:\s|$)/i.test(label);
+        });
+      if (!replyButton) return false;
+      replyButton.click();
+      editor = await waitForGmailReplyEditor(messageRoot);
+    }
+    if (!editor) return false;
+
+    const normalizedDraft = draft.trim();
+    if (!(editor.innerText || "").includes(normalizedDraft.slice(0, Math.min(80, normalizedDraft.length)))) {
+      editor.focus();
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(true);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      const inserted = document.execCommand?.("insertText", false, `${normalizedDraft}\n\n`);
+      if (!inserted) {
+        const draftNode = document.createElement("div");
+        draftNode.textContent = normalizedDraft;
+        editor.insertBefore(document.createElement("br"), editor.firstChild);
+        editor.insertBefore(draftNode, editor.firstChild);
+      }
+      editor.dispatchEvent(new InputEvent("input", {
+        bubbles: true,
+        inputType: "insertText",
+        data: normalizedDraft
+      }));
+    }
+    editor.focus();
+    editor.scrollIntoView({ block: "center", behavior: "smooth" });
+    card._nativeReplyDraft = normalizedDraft;
+    return true;
+  }
+
+  function findGmailReplyEditor(messageRoot) {
+    const selectors = [
+      '.Am.Al[contenteditable="true"]',
+      '[role="textbox"][contenteditable="true"]',
+      'div[contenteditable="true"][aria-label*="正文"]',
+      'div[contenteditable="true"][aria-label*="Message Body" i]'
+    ].join(",");
+    const localEditors = visibleElements(messageRoot.querySelectorAll(selectors));
+    if (localEditors.length) return localEditors.at(-1);
+    return visibleElements(document.querySelectorAll(selectors))
+      .filter((element) => !element.closest(`#${CARD_ID}`))
+      .at(-1) || null;
+  }
+
+  async function waitForGmailReplyEditor(messageRoot, timeoutMs = 3000) {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      const editor = findGmailReplyEditor(messageRoot);
+      if (editor) return editor;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return null;
+  }
+
+  function renderNativeReplyOpened(card) {
+    const panel = card.querySelector(".gais-reply-panel");
+    if (!panel) return;
+    panel.hidden = false;
+    panel.className = "gais-reply-panel gais-reply-panel-opened";
+    panel.innerHTML = `
+      <span><strong>回复草稿已放入 Gmail 回复框</strong><small>请检查内容后再发送，Otter 不会自动发送邮件。</small></span>
+      <button type="button" data-action="choose-another-reply">重新选择</button>
+    `;
+    panel.querySelector('[data-action="choose-another-reply"]')?.addEventListener("click", () => {
+      renderReplyOptions(card, card._replyOptions || []);
+    });
   }
 
   function renderReplyDraft(card, draft) {
@@ -659,15 +831,24 @@
     panel.className = "gais-translation-panel";
     panel.hidden = true;
 
+    dock.append(trigger, panel);
+
+    // Gmail wraps its native translation notice and the actual `.a3s` message
+    // inside `.ii.gt`. Insert before that whole body region so the Otter
+    // translation control sits directly below the sender header and above
+    // Gmail's own translation notice. Inserting beside `.a3s` can land at the
+    // bottom of clipped or partially hidden messages.
     if (SITE.key === "gmail") {
-      const nativeSummary = findGmailNativeSummaryButton();
-      if (nativeSummary?.parentElement) nativeSummary.insertAdjacentElement("afterend", trigger);
-      else dock.append(trigger);
-      dock.append(panel);
+      const gmailBodyRegion = bodyEl.closest(".ii.gt") || bodyEl.closest(".ii");
+      if (gmailBodyRegion?.parentElement) {
+        gmailBodyRegion.insertAdjacentElement("beforebegin", dock);
+      } else {
+        bodyEl.insertAdjacentElement("beforebegin", dock);
+      }
     } else {
-      dock.append(trigger, panel);
+      // Keep the translation tool and its result above the original message.
+      bodyEl.insertAdjacentElement("beforebegin", dock);
     }
-    bodyEl.insertAdjacentElement("afterend", dock);
 
     card._translationTrigger = trigger;
     card._translationPanel = panel;
@@ -677,15 +858,6 @@
       event.stopPropagation();
       translateThread(card, signature);
     });
-  }
-
-  function findGmailNativeSummaryButton() {
-    return visibleElements(document.querySelectorAll('button, [role="button"]'))
-      .find((element) => {
-        if (element.id === TRANSLATE_TRIGGER_ID || element.closest(`#${CARD_ID}`)) return false;
-        const text = (element.innerText || element.textContent || element.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim();
-        return /总结此邮件|summari[sz]e this email/i.test(text);
-      }) || null;
   }
 
   function removeTranslationControls() {
@@ -802,58 +974,154 @@
     return [...new Set(options)].slice(0, 3);
   }
 
-  function selectActionLinks(links, summaryText) {
+  function selectActionLinks(links, summaryText, language) {
     if (!Array.isArray(links)) return [];
     const summary = String(summaryText || "").toLowerCase();
     return links
       .map((link) => {
-        let host = "";
-        try { host = new URL(link.href).hostname.toLowerCase(); } catch { return null; }
+        if (isLowValueEmailLink(link.href, link.text)) return null;
+        let url;
+        try { url = new URL(link.href); } catch { return null; }
+        const host = url.hostname.toLowerCase();
         const text = String(link.text || "").trim();
-        let label = actionLinkLabel(host, link.href, text);
+        let label = actionLinkLabel(host, link.href, text, language);
+        if (!label) return null;
         let score = 0;
+        let trustedDestination = false;
+        const actionValue = `${text} ${url.pathname}`;
+        const hasActionSignal = /(查看|详情|处理|审核|报告|账户|控制台|支付|付款|账单|发票|续费|下载|试用|开始使用|设置|配置|文档|指南|排名|成本|花费|价格|dashboard|review|details|manage|console|report|account|verify|confirm|pay|payment|invoice|billing|checkout|renew|try|get started|start now|learn more|read more|download|support|ticket|settings?|configure|docs?|documentation|guides?|rankings?|pricing|spend|cost)/i.test(actionValue);
+        const isPrimaryAction = /(支付|付款|账单|发票|续费|试用|开始使用|审核|验证|确认|pay|payment|invoice|checkout|renew|try|get started|verify|confirm|approve)/i.test(actionValue);
         if (/appstoreconnect\.apple\.com$/.test(host)) {
-          label = "前往 App Store Connect";
+          label = language === "zh-CN" ? "前往 App Store Connect" : "Go to App Store Connect";
           score += 200;
+          trustedDestination = true;
         } else if (/testflight\.apple\.com$/.test(host)) {
-          label = "前往 TestFlight";
+          label = language === "zh-CN" ? "前往 TestFlight" : "Open TestFlight";
           score += 180;
+          trustedDestination = true;
         } else if (/reportaproblem\.apple\.com$/.test(host)) {
           score += 170;
+          trustedDestination = true;
         } else if (/(^|\.)account\.apple\.com$|appleid\.apple\.com$|idmsa\.apple\.com$/.test(host)) {
           score += 160;
+          trustedDestination = true;
         } else if (/apps\.apple\.com$|support\.apple\.com$/.test(host)) {
           score += 140;
-        } else if (/(查看|详情|处理|审核|报告|账户|控制台|dashboard|review|details|manage|console|report|account|verify|confirm)/i.test(text)) {
-          score += 70;
+          trustedDestination = true;
+        } else if (hasActionSignal) {
+          score += isPrimaryAction ? 100 : 60;
         }
-        if (summary.includes(host.replace(/^www\./, ""))) score += 50;
-        if (/(app store connect|testflight|查看详情|前往|处理)/i.test(`${summary} ${text}`)) score += 25;
+        const relevance = actionLinkSummaryScore(text, url, summary);
+        score += relevance;
+        if (!trustedDestination && (!hasActionSignal || relevance < 50)) return null;
         if (!text && score < 100) return null;
         return { href: link.href, label, title: text || host, score };
       })
       .filter((item) => item && item.score >= 50)
       .sort((a, b) => b.score - a.score)
       .filter((item, index, list) => list.findIndex((other) => other.label === item.label) === index)
-      .slice(0, 2);
+      .slice(0, 4);
   }
 
-  function actionLinkLabel(host, href, text) {
-    const normalizedText = String(text || "").trim();
+  function actionLinkSummaryScore(text, url, summary) {
+    const normalizedText = String(text || "")
+      .toLowerCase()
+      .replace(/[>›→↗]+\s*$/u, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    const targetText = normalizedText
+      .replace(/^(?:try|use|open|launch|view|visit|go to|learn more about|read more about|get started(?: with)?|start using|download)\s+/i, "")
+      .replace(/\s+(?:now|today)$/i, "")
+      .trim();
+    let score = 0;
+
+    if (targetText.length >= 4 && summary.includes(targetText)) score += 150;
+
+    const ignoredTokens = new Set(["about", "account", "click", "details", "email", "here", "learn", "more", "open", "read", "start", "started", "using", "view", "with"]);
+    const tokens = `${targetText} ${url.pathname}`
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter((token) => token.length >= 4 && !ignoredTokens.has(token));
+    for (const token of [...new Set(tokens)].slice(0, 5)) {
+      if (summary.includes(token)) score += 30;
+    }
+
+    const hostParts = url.hostname.replace(/^www\./, "").split(".");
+    const brand = hostParts.length > 1 ? hostParts.at(-2) : hostParts[0];
+    if (brand?.length >= 4 && summary.includes(brand)) score += 35;
+
+    const intentPairs = [
+      [/(?:pay(?:ment)?|checkout|settle|invoice|billing|bill\b|renew|续费|支付|付款|缴费|账单|发票)/i, /(?:pay(?:ment)?|invoice|billing|bill\b|renew|due|overdue|支付|付款|缴费|账单|发票|续费|到期|应付)/i, 170],
+      [/(?:verify|confirm|approve|review|审核|验证|确认|批准)/i, /(?:verify|confirm|approve|review|审核|验证|确认|批准|待办|需要|需)/i, 120],
+      [/(?:report.*problem|contact.*support|help|报告问题|联系支持)/i, /(?:problem|issue|support|help|问题|异常|支持|报告)/i, 110],
+      [/(?:download|install|下载|安装)/i, /(?:download|install|app|application|下载|安装|应用)/i, 100],
+      [/(?:try|get started|start now|launch|试用|开始使用)/i, /(?:try|get started|start using|launch|试用|体验|开始使用|推出|功能)/i, 90],
+      [/(?:manage subscription|subscription plan|管理订阅)/i, /(?:subscription|plan|renew|订阅|套餐|续费)/i, 90],
+      [/(?:routing.*settings|settings.*routing|路由设置)/i, /(?:routing|router|route|路由|调整|配置|设置)/i, 120],
+      [/(?:docs?|documentation|guides?|文档|指南)/i, /(?:router|routing|route|model|feature|模型|功能|路由|文档|指南|说明)/i, 90],
+      [/(?:rankings?|spend|pricing|cost|排名|成本|花费|价格)/i, /(?:rankings?|spend|pricing|cost|price|排名|成本|花费|价格|档位)/i, 120],
+      [/(?:dashboard|console|portal|account|控制台|账户|账号)/i, /(?:dashboard|console|portal|account|控制台|账户|账号|后台)/i, 90]
+    ];
+    for (const [actionPattern, summaryPattern, intentScore] of intentPairs) {
+      if (actionPattern.test(normalizedText) && summaryPattern.test(summary)) {
+        score += intentScore;
+        break;
+      }
+    }
+    return score;
+  }
+
+  function actionLinkLabel(host, href, text, language) {
+    const isChinese = language === "zh-CN";
+    const normalizedText = String(text || "").replace(/[>›→↗]+\s*$/u, "").trim();
+    if (isLowValueEmailLink(href, normalizedText)) return "";
     let path = "";
     try { path = new URL(href).pathname.toLowerCase(); } catch { /* 已由调用方校验 URL */ }
 
-    if (/appstoreconnect\.apple\.com$/.test(host)) return "前往 App Store Connect";
-    if (/testflight\.apple\.com$/.test(host)) return "前往 TestFlight";
-    if (/reportaproblem\.apple\.com$/.test(host)) return "报告购买问题";
-    if (/(^|\.)account\.apple\.com$|appleid\.apple\.com$|idmsa\.apple\.com$/.test(host)) return "进入 Apple 账户";
-    if (/apps\.apple\.com$/.test(host)) return "在 App Store 中查看";
-    if (/support\.apple\.com$/.test(host)) return "获取 Apple 支持";
+    if (/appstoreconnect\.apple\.com$/.test(host)) return isChinese ? "前往 App Store Connect" : "Go to App Store Connect";
+    if (/testflight\.apple\.com$/.test(host)) return isChinese ? "前往 TestFlight" : "Open TestFlight";
+    if (/reportaproblem\.apple\.com$/.test(host)) return isChinese ? "报告购买问题" : "Report a Purchase Issue";
+    if (/(^|\.)account\.apple\.com$|appleid\.apple\.com$|idmsa\.apple\.com$/.test(host)) return isChinese ? "查看 Apple 账户" : "View Apple Account";
+    if (/apps\.apple\.com$/.test(host)) return isChinese ? "在 App Store 中查看" : "View in the App Store";
+    if (/support\.apple\.com$/.test(host)) return isChinese ? "获取 Apple 支持" : "Get Apple Support";
 
-    if (/^(apple\s*(id|账户|账号)|账户|账号)$/i.test(normalizedText)) return "进入 Apple 账户";
-    if (/^(报告问题|report (a )?problem)$/i.test(normalizedText) || /report.*problem/.test(path)) return "报告问题";
-    if (/^(查看详情|details?|learn more)$/i.test(normalizedText)) return "查看邮件详情";
-    return normalizedText && normalizedText.length <= 36 ? normalizedText : "查看邮件详情";
+    if (/(?:view|show)[_-]?invoice|invoice[_-]?view/.test(path)) return isChinese ? "查看账单" : "View Invoice";
+    if (/(?:pay|checkout|payment)[_-]?(?:invoice|bill)?/.test(path)) return isChinese ? "支付账单" : "Pay Invoice";
+
+    if (/^(apple\s*(id|账户|账号)|账户|账号|view|manage|open)\s*(account|账户|账号)?$/i.test(normalizedText)) return isChinese ? "查看账户" : "View Account";
+    if (/^(报告问题|report (a |purchase )?problem)$/i.test(normalizedText) || /report.*problem/.test(path)) return isChinese ? "报告问题" : "Report a Problem";
+    if (/^(查看详情|details?|view details|learn more)$/i.test(normalizedText)) return isChinese ? "查看详情" : "View Details";
+    if (/^(联系支持|contact support|get support)$/i.test(normalizedText)) return isChinese ? "联系支持" : "Contact Support";
+    if (/^(管理订阅|manage subscription)$/i.test(normalizedText)) return isChinese ? "管理订阅" : "Manage Subscription";
+
+    const tryMatch = normalizedText.match(/^(?:try|试用)\s+(.+?)(?:\s+now)?$/i);
+    if (tryMatch) return isChinese ? `试用 ${tryMatch[1]}` : `Try ${tryMatch[1]}`;
+    if (/^(?:(?:pay|make|complete)\s+(?:(?:the|your|this|a)\s+)?(?:payment|invoice|bill)|pay now|payment|checkout|支付|立即支付|付款)$/i.test(normalizedText)) return isChinese ? "支付账单" : "Pay Invoice";
+    if (/^(?:(?:view|open|download)?\s*(?:the\s*)?(?:invoice|bill)(?:\s+online)?|查看账单|查看发票)$/i.test(normalizedText)) return isChinese ? "查看账单" : "View Invoice";
+    if (/(?:billing portal|payment portal|账单中心|支付中心)/i.test(normalizedText)) return isChinese ? "打开账单中心" : "Open Billing Portal";
+    if (/^(?:renew(?: now)?|续费|立即续费)$/i.test(normalizedText)) return isChinese ? "立即续费" : "Renew Now";
+    if (/^(?:get started(?: now)?|start now|start using|开始使用)$/i.test(normalizedText)) return isChinese ? "开始使用" : "Get Started";
+    if (/^(?:learn more|read more|了解更多|阅读更多)$/i.test(normalizedText)) return isChinese ? "了解更多" : "Learn More";
+    if (/^(?:open|view|go to|visit)\s+(?:the\s+)?(?:dashboard|console|portal)$/i.test(normalizedText)) return isChinese ? "打开控制台" : "Open Dashboard";
+    if (/^(?:download|install)(?:\s+(?:the\s+)?app)?$/i.test(normalizedText)) return isChinese ? "下载应用" : "Download App";
+    if (/(?:spend|cost|pricing|费用|成本|花费).*(?:rankings?|排名)|(?:rankings?|排名).*(?:spend|cost|pricing|费用|成本|花费)/i.test(normalizedText)) return isChinese ? "查看费用排名" : "View Cost Rankings";
+    if (/(?:routing|router|route|路由).*(?:settings?|configure|配置|设置)|(?:settings?|configure|配置|设置).*(?:routing|router|route|路由)/i.test(normalizedText)) return isChinese ? "打开路由设置" : "Open Routing Settings";
+    if (/(?:routing|router|route|路由).*(?:docs?|documentation|guides?|文档|指南)|(?:docs?|documentation|guides?|文档|指南).*(?:routing|router|route|路由)/i.test(normalizedText)) return isChinese ? "查看路由文档" : "View Routing Docs";
+    if (/^(?:docs?|documentation|guides?|文档|指南)$/i.test(normalizedText)) return isChinese ? "查看文档" : "View Docs";
+    if (/^(?:pricing|costs?|价格|费用)$/i.test(normalizedText)) return isChinese ? "查看价格" : "View Pricing";
+
+    if (normalizedText && normalizedText.length <= 50) {
+      return normalizedText;
+    }
+    return "";
+  }
+
+  function resolvedSummaryLanguageCode(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (normalized === "zh-cn" || normalized.startsWith("zh") || normalized.includes("中文") || normalized.includes("chinese")) return "zh-CN";
+    if (normalized === "en" || normalized.startsWith("en-") || normalized === "english" || normalized === "英文") return "en";
+    const browserLanguage = chrome.i18n?.getUILanguage?.() || navigator.language || "en";
+    return browserLanguage.toLowerCase().startsWith("zh") ? "zh-CN" : "en";
   }
 
   function hasExplicitNoReplySignal(thread) {

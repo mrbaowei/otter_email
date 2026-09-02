@@ -81,7 +81,12 @@
         <div class="grid two">
           <label>
             <span>输出语言</span>
-            <input id="summaryLanguage" type="text" value="简体中文">
+            <select id="summaryLanguage">
+              <option value="auto">跟随浏览器（默认）</option>
+              <option value="zh-CN">简体中文</option>
+              <option value="en">English</option>
+            </select>
+            <small>同时控制摘要内容和摘要内可点击操作文字的语言。</small>
           </label>
           <label>
             <span>详细程度</span>
@@ -104,11 +109,6 @@
           </div>
           <label class="switch"><input id="alwaysDetailed" type="checkbox"><span></span></label>
         </div>
-      </section>
-
-      <section class="security">
-        <h2>安全说明</h2>
-        <p>邮件属于不可信输入。插件不会读取 Codex、ChatGPT、Antigravity 或其他桌面客户端的登录令牌；只使用你在这里明确填写的 API Key。浏览器扩展属于客户端环境，请使用独立、低额度、可随时撤销的 Key。涉及付款、账户、合同、交易和截止日期时，请核对原文。</p>
       </section>
 
       <section class="config-transfer">

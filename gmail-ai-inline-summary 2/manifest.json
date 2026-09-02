@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "Email Otter - AI 邮件摘要",
-  "version": "0.7.20",
-  "description": "打开 Gmail、Outlook、Yahoo、iCloud、163邮箱、126邮箱或 QQ邮箱邮件时自动生成中文摘要。",
-  "permissions": ["storage", "tabs"],
+  "version": "0.7.28",
+  "description": "打开 Gmail、Outlook、Yahoo、iCloud、163邮箱、126邮箱或 QQ邮箱邮件时自动生成智能摘要。",
+  "permissions": ["storage"],
   "host_permissions": [
     "https://mail.google.com/*",
     "https://mail.qq.com/*",
