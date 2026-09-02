@@ -1,6 +1,10 @@
-# Email Otter
+<p align="center">
+  <img src="docs/assets/email-otter-logo.png" alt="Email Otter 水獭 Logo" width="128">
+</p>
 
-> A quiet AI copilot for the email you are reading.
+<h1 align="center">Email Otter</h1>
+
+<p align="center"><em>A quiet AI copilot for the email you are reading.</em></p>
 
 Email Otter 是一个 Chrome Manifest V3 扩展。它只处理你当前在网页邮箱中打开、且页面已经加载的邮件内容与必要上下文，使用你自己配置的模型 API Key 生成摘要、待办、回复草稿和翻译，并把结果直接显示在邮件页面中。
 
